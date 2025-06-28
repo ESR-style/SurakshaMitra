@@ -35,7 +35,7 @@ export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
             <MaterialIcons name="account-balance" size={36} color="white" />
           </View>
           <Text className="text-blue-800 font-bold text-2xl mb-1">SURAKSHA BANK</Text>
-          <Text className="text-blue-600 font-semibold text-lg">सुरक्षा बैंक</Text>
+          <Text className="text-blue-600 font-semibold text-lg">सुरक्षा-बैंक</Text>
         </View>
       </View>
 

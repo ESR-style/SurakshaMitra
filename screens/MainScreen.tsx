@@ -1,27 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface MainScreenProps {
   onLogout: () => void;
+  onNavigateToSendMoney: () => void;
+  onNavigateToCards: () => void;
+  onNavigateToProfile: () => void;
+  enableFirstActionTracking?: boolean; // Whether first action tracking is enabled
+  onFirstActionCompleted?: () => void; // Callback when first action is completed
 }
 
-export const MainScreen = ({ onLogout }: MainScreenProps) => {
+export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards, onNavigateToProfile, enableFirstActionTracking = false, onFirstActionCompleted }: MainScreenProps) => {
   const [showBalance, setShowBalance] = useState(false);
-  const [isFirstInteraction, setIsFirstInteraction] = useState(true);
 
   const handleBalanceToggle = () => {
-    if (isFirstInteraction) {
+    // Only log if first action tracking is enabled
+    if (enableFirstActionTracking) {
       console.log(JSON.stringify({ firstAction: 'showBalance', pressed: !showBalance }));
-      setIsFirstInteraction(false);
+      onFirstActionCompleted?.(); // Notify parent component
     }
     setShowBalance(!showBalance);
   };
 
-  const handleOtherInteraction = () => {
-    if (isFirstInteraction) {
-      setIsFirstInteraction(false);
+  const handleFirstActionAndNavigate = (actionName: string, navigationFunction: () => void) => {
+    // Log first action if tracking is enabled
+    if (enableFirstActionTracking) {
+      console.log(JSON.stringify({ firstAction: actionName }));
+      onFirstActionCompleted?.(); // Notify parent component
+    }
+    navigationFunction();
+  };
+
+  const handleOtherInteraction = (actionName?: string) => {
+    // Log first action if tracking is enabled and action name is provided
+    if (enableFirstActionTracking && actionName) {
+      console.log(JSON.stringify({ firstAction: actionName }));
+      onFirstActionCompleted?.(); // Notify parent component
     }
   };
 
@@ -43,13 +59,13 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
               </View>
             </View>
             <View className="flex-row items-center space-x-6">
-              <TouchableOpacity onPress={handleOtherInteraction}>
+              <TouchableOpacity onPress={() => handleOtherInteraction('search')}>
                 <MaterialIcons name="search" size={26} color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleOtherInteraction}>
+              <TouchableOpacity onPress={() => handleOtherInteraction('notifications')}>
                 <MaterialIcons name="notifications-none" size={26} color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { handleOtherInteraction(); onLogout(); }} className="bg-red-50 p-2 rounded-full">
+              <TouchableOpacity onPress={() => handleFirstActionAndNavigate('logout', onLogout)} className="bg-red-50 p-2 rounded-full">
                 <MaterialIcons name="logout" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
@@ -155,28 +171,28 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
           <Text className="text-black font-bold text-2xl mb-6">Pay & Transfer</Text>
           
           <View className="flex-row justify-between mb-6">
-            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
+            <TouchableOpacity className="items-center" onPress={() => handleFirstActionAndNavigate('sendMoney', onNavigateToSendMoney)}>
               <View className="w-20 h-20 bg-blue-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="send" size={32} color="#3B82F6" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">Send{"\n"}Money</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
+            <TouchableOpacity className="items-center" onPress={() => handleOtherInteraction('scanPay')}>
               <View className="w-20 h-20 bg-green-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="qr-code-scanner" size={32} color="#10B981" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">Scan{"\n"}Pay</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
+            <TouchableOpacity className="items-center" onPress={() => handleOtherInteraction('myBeneficiary')}>
               <View className="w-20 h-20 bg-purple-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="people" size={32} color="#8B5CF6" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">My{"\n"}Beneficiary</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
+            <TouchableOpacity className="items-center" onPress={() => handleOtherInteraction('passbook')}>
               <View className="w-20 h-20 bg-orange-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="book" size={32} color="#F97316" />
               </View>
@@ -248,12 +264,12 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
             <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
           </TouchableOpacity>
 
-          <TouchableOpacity className="items-center py-2 px-4">
+          <TouchableOpacity className="items-center py-2 px-4" onPress={() => handleFirstActionAndNavigate('cards', onNavigateToCards)}>
             <MaterialIcons name="credit-card" size={28} color="#666" />
             <Text className="text-gray-600 text-sm font-medium mt-1">Cards</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="items-center py-2 px-4">
+          <TouchableOpacity className="items-center py-2 px-4" onPress={() => handleFirstActionAndNavigate('profile', onNavigateToProfile)}>
             <MaterialIcons name="person" size={28} color="#666" />
             <Text className="text-gray-600 text-sm font-medium mt-1">Profile</Text>
           </TouchableOpacity>
