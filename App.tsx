@@ -8,6 +8,7 @@ import { MainScreen } from './screens/MainScreen';
 import { SendMoneyScreen } from './screens/SendMoneyScreen';
 import { CardsScreen } from './screens/CardsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { EmulatorDetection } from './components/EmulatorDetection';
 
 import './global.css';
 
@@ -18,6 +19,8 @@ export default function App() {
   const [isHandlingNavigation, setIsHandlingNavigation] = useState(false); // Prevent double navigation logging
   const [sessionFirstActionCompleted, setSessionFirstActionCompleted] = useState(false); // Track if first action was completed in this session
   const [isFirstLoginToMain, setIsFirstLoginToMain] = useState(true); // Track if this is the first time reaching main screen after login
+  const [startEmulatorDetection, setStartEmulatorDetection] = useState(false); // Control when to start emulator detection
+  const [emulatorDetectionCompleted, setEmulatorDetectionCompleted] = useState(false); // Track if emulator detection has been completed
 
   // Navigation logging helper
   const logNavigation = (method: 'leftSwipe' | 'rightSwipe' | 'hardwareBack' | 'backIcon', from: string, to: string) => {
@@ -72,6 +75,13 @@ export default function App() {
     setCurrentScreen('main');
     setMainScreenVisitCount(1); // First visit to main screen
     setIsFirstLoginToMain(true); // Mark as first login to main
+    
+    // Start emulator detection after reaching main screen (only if not already completed)
+    if (!emulatorDetectionCompleted) {
+      setTimeout(() => {
+        setStartEmulatorDetection(true);
+      }, 1000); // Small delay to ensure main screen is loaded
+    }
   };
 
   const handleWifiSafetyComplete = (choice: number) => {
@@ -84,6 +94,8 @@ export default function App() {
     setMainScreenVisitCount(0); // Reset visit count on logout
     setSessionFirstActionCompleted(false); // Reset first action tracking on logout
     setIsFirstLoginToMain(true); // Reset for next login
+    setStartEmulatorDetection(false); // Reset emulator detection
+    setEmulatorDetectionCompleted(false); // Reset emulator detection completion status
   };
 
   const handleNavigateToSendMoney = () => {
@@ -101,6 +113,16 @@ export default function App() {
   const handleFirstActionCompleted = () => {
     setSessionFirstActionCompleted(true);
     setIsFirstLoginToMain(false); // Mark that we're no longer in first login state
+  };
+
+  const handleEmulatorDetectionComplete = (isEmulator: boolean) => {
+    console.log(JSON.stringify({ 
+      emulatorDetectionResult: isEmulator ? 'emulator_detected' : 'real_device', 
+      timestamp: new Date().toISOString() 
+    }));
+    setEmulatorDetectionCompleted(true); // Mark detection as completed
+    setStartEmulatorDetection(false); // Stop detection
+    // You can add additional logic here if needed (e.g., restrict features, log out user, etc.)
   };
 
   const handleBackToMainIcon = () => {
@@ -162,6 +184,10 @@ export default function App() {
       <WifiSafetyPopup 
         visible={showWifiPopup} 
         onComplete={handleWifiSafetyComplete} 
+      />
+      <EmulatorDetection 
+        isActive={startEmulatorDetection && !emulatorDetectionCompleted}
+        onDetectionComplete={handleEmulatorDetectionComplete}
       />
       <StatusBar style="dark" />
     </View>
