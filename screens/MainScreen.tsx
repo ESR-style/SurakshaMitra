@@ -9,6 +9,21 @@ interface MainScreenProps {
 
 export const MainScreen = ({ onLogout }: MainScreenProps) => {
   const [showBalance, setShowBalance] = useState(false);
+  const [isFirstInteraction, setIsFirstInteraction] = useState(true);
+
+  const handleBalanceToggle = () => {
+    if (isFirstInteraction) {
+      console.log(JSON.stringify({ firstAction: 'showBalance', pressed: !showBalance }));
+      setIsFirstInteraction(false);
+    }
+    setShowBalance(!showBalance);
+  };
+
+  const handleOtherInteraction = () => {
+    if (isFirstInteraction) {
+      setIsFirstInteraction(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -28,13 +43,13 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
               </View>
             </View>
             <View className="flex-row items-center space-x-6">
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleOtherInteraction}>
                 <MaterialIcons name="search" size={26} color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleOtherInteraction}>
                 <MaterialIcons name="notifications-none" size={26} color="#666" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onLogout} className="bg-red-50 p-2 rounded-full">
+              <TouchableOpacity onPress={() => { handleOtherInteraction(); onLogout(); }} className="bg-red-50 p-2 rounded-full">
                 <MaterialIcons name="logout" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
@@ -51,69 +66,87 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
           >
             <View className="flex-row items-center justify-between mb-6">
               <Text className="text-white text-2xl font-bold">My Portfolio</Text>
-              <View className="flex-row items-center">
-                <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mr-3">
-                  <Text className="text-white font-bold text-lg">SB</Text>
-                </View>
-                <TouchableOpacity onPress={() => setShowBalance(!showBalance)}>
-                  <MaterialIcons 
-                    name={showBalance ? "visibility" : "visibility-off"} 
-                    size={24} 
-                    color="#FFF" 
-                  />
-                </TouchableOpacity>
+              <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
+                <Text className="text-white font-bold text-lg">SB</Text>
               </View>
             </View>
 
             <View className="space-y-6">
-              <View className="flex-row justify-between">
-                <View className="flex-1 mr-4">
-                  <View className="flex-row items-center mb-2">
-                    <MaterialIcons name="account-balance-wallet" size={18} color="#FFF" />
-                    <Text className="text-white/80 text-sm ml-2 font-medium">Account Balance</Text>
+              {/* 2x2 Grid Layout with proper spacing */}
+              <View className="space-y-4">
+                {/* Top Row */}
+                <View className="flex-row space-x-4">
+                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                    <View className="flex-row items-center mb-2">
+                      <MaterialIcons name="account-balance-wallet" size={18} color="#FFF" />
+                      <Text className="text-white/80 text-sm ml-2 font-medium">Balance ( A/C )</Text>
+                    </View>
+                    <Text className="text-white text-xl font-bold">
+                      {showBalance ? '₹ 2,50,000' : '₹ ••••••'}
+                    </Text>
                   </View>
-                  <Text className="text-white text-3xl font-bold">
-                    {showBalance ? '₹ 2,50,000' : '₹ ••••••'}
-                  </Text>
+
+                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                    <View className="flex-row items-center mb-2">
+                      <MaterialIcons name="credit-card" size={18} color="#FFF" />
+                      <Text className="text-white/80 text-sm ml-2 font-medium">OD Account ( A/C )</Text>
+                    </View>
+                    <Text className="text-white text-xl font-bold">
+                      {showBalance ? '₹ 45,000' : '₹ ••••••'}
+                    </Text>
+                  </View>
                 </View>
 
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-2">
-                    <MaterialIcons name="trending-up" size={18} color="#FFF" />
-                    <Text className="text-white/80 text-sm ml-2 font-medium">Total Invested</Text>
+                {/* Bottom Row */}
+                <View className="flex-row space-x-4">
+                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                    <View className="flex-row items-center mb-2">
+                      <MaterialIcons name="home" size={18} color="#FFF" />
+                      <Text className="text-white/80 text-sm ml-2 font-medium">Loans ( A/C )</Text>
+                    </View>
+                    <Text className="text-white text-xl font-bold">
+                      {showBalance ? '₹ 14,60,000' : '₹ ••••••••'}
+                    </Text>
                   </View>
-                  <Text className="text-white text-xl font-semibold">
-                    {showBalance ? '₹ 1,85,000' : '₹ ••••••'}
-                  </Text>
+
+                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                    <View className="flex-row items-center mb-2">
+                      <MaterialIcons name="savings" size={18} color="#FFF" />
+                      <Text className="text-white/80 text-sm ml-2 font-medium">Deposits ( A/C )</Text>
+                    </View>
+                    <Text className="text-white text-xl font-bold">
+                      {showBalance ? '₹ 5,75,000' : '₹ ••••••••'}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
-              <View className="flex-row justify-between">
-                <View className="flex-1 mr-4">
-                  <View className="flex-row items-center mb-2">
-                    <MaterialIcons name="savings" size={18} color="#FFF" />
-                    <Text className="text-white/80 text-sm ml-2 font-medium">Current Value</Text>
+              {/* Toggle Switch Style Eye Button */}
+              <View className="items-center">
+                <TouchableOpacity 
+                  onPress={handleBalanceToggle}
+                  className={`flex-row items-center p-1 rounded-full border-2 w-16 h-8 ${
+                    showBalance 
+                      ? 'bg-white/30 border-white/50 justify-end' 
+                      : 'bg-white/10 border-white/30 justify-start'
+                  }`}
+                >
+                  <View className={`w-6 h-6 rounded-full items-center justify-center ${
+                    showBalance ? 'bg-white' : 'bg-white/50'
+                  }`}>
+                    <MaterialIcons 
+                      name={showBalance ? "visibility" : "visibility-off"} 
+                      size={14} 
+                      color={showBalance ? "#2563eb" : "#FFF"} 
+                    />
                   </View>
-                  <Text className="text-white text-xl font-semibold">
-                    {showBalance ? '₹ 2,12,000' : '₹ ••••••'}
-                  </Text>
-                </View>
-
-                <View className="flex-1">
-                  <View className="flex-row items-center mb-2">
-                    <MaterialIcons name="show-chart" size={18} color="#FFF" />
-                    <Text className="text-white/80 text-sm ml-2 font-medium">P&L</Text>
-                  </View>
-                  <Text className="text-green-300 text-xl font-bold">
-                    {showBalance ? '+₹ 27,000' : '+₹ ••••••'}
-                  </Text>
-                </View>
+                </TouchableOpacity>
+                <Text className="text-white/70 text-xs mt-2">
+                  {showBalance ? 'Hide Balance' : 'Show Balance'}
+                </Text>
               </View>
             </View>
 
-            <TouchableOpacity className="bg-white/20 rounded-2xl py-4 px-6 mt-6 self-start">
-              <Text className="text-white font-semibold text-lg">View Details</Text>
-            </TouchableOpacity>
           </LinearGradient>
         </View>
 
@@ -122,28 +155,28 @@ export const MainScreen = ({ onLogout }: MainScreenProps) => {
           <Text className="text-black font-bold text-2xl mb-6">Pay & Transfer</Text>
           
           <View className="flex-row justify-between mb-6">
-            <TouchableOpacity className="items-center">
+            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
               <View className="w-20 h-20 bg-blue-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="send" size={32} color="#3B82F6" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">Send{"\n"}Money</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center">
+            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
               <View className="w-20 h-20 bg-green-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="qr-code-scanner" size={32} color="#10B981" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">Scan{"\n"}Pay</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center">
+            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
               <View className="w-20 h-20 bg-purple-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="people" size={32} color="#8B5CF6" />
               </View>
               <Text className="text-gray-700 text-sm font-medium text-center">My{"\n"}Beneficiary</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center">
+            <TouchableOpacity className="items-center" onPress={handleOtherInteraction}>
               <View className="w-20 h-20 bg-orange-100 rounded-3xl items-center justify-center mb-3 shadow-sm">
                 <MaterialIcons name="book" size={32} color="#F97316" />
               </View>
