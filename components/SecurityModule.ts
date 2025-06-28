@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system';
 
 interface SecurityState {
   isDeveloperMode: boolean;
@@ -94,11 +96,11 @@ class SecurityModule {
 
   /**
    * Check if device is in developer mode
-   * Uses Expo APIs to detect development environment
+   * Enhanced detection using multiple indicators
    */
   private async checkDeveloperMode(): Promise<boolean> {
     try {
-      // Check if running in development mode
+      // Primary checks - development environment
       if (__DEV__) {
         return true;
       }
@@ -113,8 +115,26 @@ class SecurityModule {
         return true;
       }
 
-      // Check if app is signed with debug key (in development)
-      if (Platform.OS === 'android' && Constants.manifest?.extra?.isDebug) {
+      // Enhanced checks using Constants and Application
+      if (Constants.isDevice === false) {
+        return true; // Running on simulator/emulator typically means dev mode
+      }
+
+      // Check if app is signed with debug key
+      if (Platform.OS === 'android') {
+        // Check for development indicators in app config
+        if (Constants.manifest?.extra?.isDebug) {
+          return true;
+        }
+
+        // Check if this is a development build
+        if (Constants.appOwnership === 'standalone' && Constants.isDevice === false) {
+          return true;
+        }
+      }
+
+      // Check for development server connection
+      if (Constants.linkingUrl?.includes('localhost') || Constants.linkingUrl?.includes('192.168')) {
         return true;
       }
 
@@ -127,7 +147,7 @@ class SecurityModule {
 
   /**
    * Check if USB debugging is enabled
-   * In Expo managed workflow, correlates with development mode
+   * Enhanced detection using multiple indicators
    */
   private async checkUSBDebugging(): Promise<boolean> {
     try {
@@ -141,8 +161,27 @@ class SecurityModule {
         return true;
       }
 
-      // Check if debugger is attached (indicates debugging session)
-      if (__DEV__) {
+      // Check if remote debugger is connected
+      if ((global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+        return true;
+      }
+
+      // Check for development server connection indicators
+      if (Constants.linkingUrl && (
+        Constants.linkingUrl.includes(':8081') || 
+        Constants.linkingUrl.includes(':19000') ||
+        Constants.linkingUrl.includes(':19001')
+      )) {
+        return true;
+      }
+
+      // Enhanced check - if we can detect metro bundler connection
+      if (typeof (global as any).__BUNDLE_START_TIME__ !== 'undefined') {
+        return true;
+      }
+
+      // Check for development environment indicators
+      if (Constants.manifest?.developer) {
         return true;
       }
 
@@ -155,59 +194,94 @@ class SecurityModule {
 
   /**
    * Check if running on emulator
-   * Uses device characteristics and Expo Device API
+   * Enhanced detection using device characteristics and Expo Device API
    */
   private async checkEmulator(): Promise<boolean> {
     try {
       if (Platform.OS !== 'android') {
-        return false;
+        // For iOS, check if it's a simulator
+        return !Device.isDevice;
       }
 
-      // Check if it's a physical device
+      // Primary check - is this a physical device?
       const isPhysicalDevice = Device.isDevice;
       if (!isPhysicalDevice) {
         return true;
       }
 
-      // Check device model and manufacturer for emulator indicators
+      // Get device characteristics
       const modelName = (Device.modelName || '').toLowerCase();
       const manufacturer = (Device.manufacturer || '').toLowerCase();
       const deviceName = (Device.deviceName || '').toLowerCase();
+      const brand = (Device.brand || '').toLowerCase();
 
+      // Comprehensive emulator detection patterns
       const emulatorIndicators = [
-        'emulator',
-        'simulator',
-        'android sdk',
-        'genymotion',
-        'google_sdk',
-        'droid4x',
-        'andy',
-        'bluestacks',
-        'goldfish',
-        'vbox',
-        'virtual',
-        'sdk',
-        'test'
+        // Generic emulator terms
+        'emulator', 'simulator', 'virtual', 'test',
+        // Android SDK emulators
+        'android sdk', 'google_sdk', 'sdk_gphone', 'sdk_google',
+        // Popular emulators
+        'genymotion', 'droid4x', 'andy', 'bluestacks', 'nox', 'memu',
+        // Virtual machine indicators
+        'goldfish', 'vbox', 'qemu', 'ranchu',
+        // Development/testing
+        'development', 'testing', 'debug'
       ];
 
+      // Check model name for emulator indicators
       const hasEmulatorIndicator = emulatorIndicators.some(indicator => 
         modelName.includes(indicator) || 
         manufacturer.includes(indicator) || 
-        deviceName.includes(indicator)
+        deviceName.includes(indicator) ||
+        brand.includes(indicator)
       );
 
       if (hasEmulatorIndicator) {
         return true;
       }
 
-      // Check for common emulator characteristics
-      if (manufacturer === 'google' && modelName.includes('sdk')) {
+      // Specific emulator detection patterns
+      const specificChecks = [
+        // Google SDK emulators
+        manufacturer === 'google' && modelName.includes('sdk'),
+        manufacturer === 'google' && brand === 'google',
+        // Common emulator model patterns
+        modelName.includes('_') && modelName.includes('x86'),
+        modelName.includes('_') && modelName.includes('x64'),
+        // Device type checks
+        Device.deviceType === Device.DeviceType.UNKNOWN,
+        // Brand-specific checks
+        brand === 'generic' && manufacturer === 'unknown',
+        brand === 'android' && manufacturer === 'google'
+      ];
+
+      if (specificChecks.some(check => check)) {
         return true;
       }
 
-      // Check device type
-      if (Device.deviceType === Device.DeviceType.UNKNOWN) {
-        return true; // Unknown device type might indicate emulator
+      // Additional heuristics for emulator detection
+      try {
+        // Check if we can access secure store (some emulators may fail)
+        await SecureStore.setItemAsync('emulator_test', 'test_value');
+        await SecureStore.deleteItemAsync('emulator_test');
+      } catch (error) {
+        // If secure store fails, might be an emulator
+        return true;
+      }
+
+      // Check for common emulator file system characteristics
+      try {
+        const documentsDir = FileSystem.documentDirectory;
+        if (documentsDir && (
+          documentsDir.includes('emulator') ||
+          documentsDir.includes('simulator') ||
+          documentsDir.includes('android_sdk')
+        )) {
+          return true;
+        }
+      } catch (error) {
+        // File system access error might indicate emulator
       }
 
       return false;
@@ -219,7 +293,7 @@ class SecurityModule {
 
   /**
    * Check if device is rooted
-   * Limited detection in Expo managed workflow
+   * Enhanced detection in Expo managed workflow
    */
   private async checkRootAccess(): Promise<boolean> {
     try {
@@ -227,30 +301,93 @@ class SecurityModule {
         return false;
       }
 
-      // Check device model for custom ROM indicators
+      // Get device characteristics
       const modelName = (Device.modelName || '').toLowerCase();
       const manufacturer = (Device.manufacturer || '').toLowerCase();
+      const brand = (Device.brand || '').toLowerCase();
+      const deviceName = (Device.deviceName || '').toLowerCase();
 
+      // Check for custom ROM indicators
       const customRomIndicators = [
-        'lineageos',
-        'cyanogen',
-        'paranoid',
-        'custom',
-        'aosp',
-        'resurrection',
-        'evolution'
+        'lineageos', 'cyanogen', 'paranoid', 'custom', 'aosp',
+        'resurrection', 'evolution', 'omni', 'carbon', 'slim',
+        'miui', 'flyme', 'coloros', 'funtouch', 'emui'
       ];
 
       const hasCustomRomIndicator = customRomIndicators.some(indicator => 
-        modelName.includes(indicator) || manufacturer.includes(indicator)
+        modelName.includes(indicator) || 
+        manufacturer.includes(indicator) ||
+        brand.includes(indicator) ||
+        deviceName.includes(indicator)
       );
 
       if (hasCustomRomIndicator) {
         return true;
       }
 
+      // Check for root-specific patterns
+      const rootIndicators = [
+        'rooted', 'root', 'magisk', 'supersu', 'chainfire',
+        'kingroot', 'towelroot', 'framaroot'
+      ];
+
+      const hasRootIndicator = rootIndicators.some(indicator => 
+        modelName.includes(indicator) ||
+        deviceName.includes(indicator) ||
+        brand.includes(indicator)
+      );
+
+      if (hasRootIndicator) {
+        return true;
+      }
+
+      // Enhanced checks using device properties
+      try {
+        // Check if we can detect unusual device characteristics
+        const buildFingerprint = (Constants.systemVersion || '').toString();
+        const buildTags = (Constants.nativeAppVersion || '').toString();
+        
+        // Check for test-keys (indicates custom build)
+        if (buildTags.includes('test-keys')) {
+          return true;
+        }
+
+        // Check for debugging/development builds
+        if (buildFingerprint.includes('test-keys') || 
+            buildFingerprint.includes('dev-keys') ||
+            buildFingerprint.includes('userdebug')) {
+          return true;
+        }
+
+        // Check for unusual manufacturer/brand combinations
+        const suspiciousCombinations = [
+          manufacturer === 'unknown' && brand === 'generic',
+          manufacturer === 'generic' && brand === 'unknown',
+          manufacturer.includes('test') || brand.includes('test')
+        ];
+
+        if (suspiciousCombinations.some(check => check)) {
+          return true;
+        }
+
+      } catch (error) {
+        console.log('Error in enhanced root check:', error);
+      }
+
+      // Try to access restricted areas (will fail on properly secured devices)
+      try {
+        // Attempt to write to a system directory (should fail on non-rooted devices)
+        const testPath = `${FileSystem.documentDirectory}../../../system/test.txt`;
+        await FileSystem.writeAsStringAsync(testPath, 'test');
+        await FileSystem.deleteAsync(testPath);
+        // If we reach here, device might have elevated permissions
+        return true;
+      } catch (error) {
+        // Expected behavior for non-rooted devices
+      }
+
       // In development mode, don't flag as rooted unless clear indicators
-      if (__DEV__) {
+      if (__DEV__ && !hasCustomRomIndicator && !hasRootIndicator) {
         return false;
       }
 
@@ -265,10 +402,40 @@ class SecurityModule {
    * Log comprehensive security state as JSON
    */
   private logSecurityState(state: SecurityState): void {
-    console.log('=== SECURITY STATE ===');
+    console.log('=== ENHANCED SECURITY STATE ===');
     console.log(JSON.stringify({
       securityCheck: 'completed',
+      version: 'enhanced_v2.0',
       state,
+      detectionMethods: {
+        developerMode: [
+          '__DEV__ flag',
+          'Expo app ownership',
+          'Debug mode detection',
+          'Development server connection',
+          'Device type analysis'
+        ],
+        usbDebugging: [
+          'Development environment detection',
+          'React DevTools connection',
+          'Metro bundler detection',
+          'Development server ports'
+        ],
+        emulator: [
+          'Device.isDevice check',
+          'Model/manufacturer analysis',
+          'SecureStore accessibility',
+          'File system patterns',
+          'Brand/device name heuristics'
+        ],
+        rootAccess: [
+          'Custom ROM detection',
+          'Build fingerprint analysis',
+          'Test-keys detection',
+          'File system permissions',
+          'Device characteristics'
+        ]
+      },
       summary: {
         threatsDetected: [
           state.isDeveloperMode && 'developer_mode',
@@ -276,14 +443,42 @@ class SecurityModule {
           state.isEmulator && 'emulator',
           state.isRooted && 'rooted_device'
         ].filter(Boolean),
+        securityLevel: this.calculateSecurityLevel(state),
         deviceInfo: {
           model: state.deviceModel,
           manufacturer: state.deviceManufacturer,
+          brand: Device.brand || 'Unknown',
           platform: Platform.OS,
-          version: state.androidVersion
+          version: state.androidVersion,
+          isDevice: Device.isDevice,
+          deviceType: Device.deviceType
+        },
+        environment: {
+          isDev: __DEV__,
+          appOwnership: Constants.appOwnership,
+          isDevice: Constants.isDevice,
+          linkingUrl: Constants.linkingUrl
         }
       }
     }, null, 2));
+  }
+
+  /**
+   * Calculate overall security level based on detected threats
+   */
+  private calculateSecurityLevel(state: SecurityState): string {
+    const threats = [
+      state.isDeveloperMode,
+      state.isUSBDebugging,
+      state.isEmulator,
+      state.isRooted
+    ].filter(Boolean).length;
+
+    if (threats === 0) return 'secure';
+    if (threats === 1) return 'low_risk';
+    if (threats === 2) return 'medium_risk';
+    if (threats >= 3) return 'high_risk';
+    return 'unknown';
   }
 
   /**
