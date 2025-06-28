@@ -12,7 +12,9 @@
       "tsconfigPaths": true
     },
 
-    "plugins": [],
+    "plugins": [
+      "./plugins/withSecurityPermissions"
+    ],
 
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,10 +31,15 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.myexpoapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.BATTERY_STATS"
+      ]
     }
   }
 }

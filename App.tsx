@@ -122,7 +122,7 @@ export default function App() {
     }));
     setEmulatorDetectionCompleted(true); // Mark detection as completed
     setStartEmulatorDetection(false); // Stop detection
-    // You can add additional logic here if needed (e.g., restrict features, log out user, etc.)
+    
   };
 
   const handleBackToMainIcon = () => {

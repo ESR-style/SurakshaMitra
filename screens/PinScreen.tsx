@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, TextInput, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { SecurityAlert } from '../components/SecurityAlert';
 
 interface PinScreenProps {
   onPinComplete: () => void;
@@ -9,6 +10,16 @@ interface PinScreenProps {
 export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSecurityAlert, setShowSecurityAlert] = useState(false);
+
+  // Show security alert when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSecurityAlert(true);
+    }, 1000); // Show after 1 second
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handlePinChange = (text: string) => {
     if (text.length <= 6 && /^\d*$/.test(text)) {
@@ -190,6 +201,12 @@ export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
           </Text>
         </View>
       </View>
+
+      {/* Security Alert Modal */}
+      <SecurityAlert 
+        visible={showSecurityAlert}
+        onClose={() => setShowSecurityAlert(false)}
+      />
     </ScrollView>
   );
 };

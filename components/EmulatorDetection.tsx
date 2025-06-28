@@ -98,8 +98,19 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
         timestamp: new Date().toISOString() 
       }));
 
-      // If average tilt is essentially 0 (very low threshold), it's likely an emulator
-      const isEmulator = avgTilt < 0.01; // Very low threshold for movement
+      // Only detect emulator if average tilt is exactly 0 or extremely close to 0
+      // Real devices should have some movement, even if minimal (> 0.0001)
+      const threshold = 0.0001;
+      const isEmulator = avgTilt < threshold;
+      
+      console.log(JSON.stringify({ 
+        emulatorDetectionResult: isEmulator ? 'emulator_detected' : 'real_device',
+        averageTilt: avgTilt,
+        threshold: threshold,
+        reason: isEmulator ? 'average_tilt_below_threshold' : 'average_tilt_above_threshold',
+        timestamp: new Date().toISOString() 
+      }));
+
       handleDetectionResult(isEmulator);
     };
 
@@ -160,7 +171,10 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
           {/* Debug Info (for development) */}
           <View className="mb-4 p-3 bg-gray-50 rounded-lg">
             <Text className="text-xs text-gray-600 text-center">
-              Debug: Avg Tilt: {averageTilt.toFixed(4)} | Readings: {gyroReadings.length}
+              Debug: Avg Tilt: {averageTilt.toFixed(6)} | Threshold: 0.0001 | Readings: {gyroReadings.length}
+            </Text>
+            <Text className="text-xs text-gray-500 text-center mt-1">
+              Detected: {averageTilt < 0.0001 ? 'Emulator (tilt < 0.0001)' : 'Real Device'}
             </Text>
           </View>
 
