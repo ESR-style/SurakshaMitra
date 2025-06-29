@@ -40,10 +40,10 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
         // Check if gyroscope is available
         const isAvailable = await Gyroscope.isAvailableAsync();
         if (!isAvailable) {
-          console.log(JSON.stringify({ 
+        console.log(JSON.stringify({ 
             emulatorDetection: 'gyroscope_not_available', 
-            timestamp: new Date().toISOString() 
-          }));
+          timestamp: new Date().toISOString() 
+        }));
           // If gyroscope is not available, assume it's an emulator
           handleDetectionResult(true);
           return;
@@ -63,7 +63,7 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
           }
           analyzeReadings(readings);
         }, 10000);
-
+        
       } catch (error) {
         console.log(JSON.stringify({ 
           emulatorDetection: 'error', 

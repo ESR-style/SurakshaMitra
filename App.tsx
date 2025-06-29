@@ -12,6 +12,21 @@ import { EmulatorDetection } from './components/EmulatorDetection';
 
 import './global.css';
 
+// Suppress Reanimated warnings about reading shared values during render
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (
+    args.length > 0 &&
+    typeof args[0] === 'string' &&
+    (args[0].includes('[Reanimated] Reading from') || 
+     args[0].includes('Reading from value during component render'))
+  ) {
+    // Suppress the specific Reanimated warning
+    return;
+  }
+  originalWarn(...args);
+};
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<'pin' | 'twoFactor' | 'main' | 'sendMoney' | 'cards' | 'profile'>('pin');
   const [showWifiPopup, setShowWifiPopup] = useState(false);

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, ScrollView, TextInput, Modal } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { CaptchaScreen } from './CaptchaScreen';
 
 interface SendMoneyScreenProps {
   onBack: () => void;
 }
 
 type TransferMethod = 'phone' | 'upi' | 'bank' | 'qr';
-type TransferStep = 'method' | 'details' | 'pin' | 'success';
+type TransferStep = 'method' | 'details' | 'captcha' | 'pin' | 'success';
 
 export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
   const [amount, setAmount] = useState('');
@@ -52,8 +53,21 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
 
   const handleContinueToPin = () => {
     if (amount && (selectedContact || upiId || (accountNumber && ifscCode) || phoneNumber)) {
-      setCurrentStep('pin');
+      const numericAmount = parseFloat(amount.replace(/[^\d.]/g, ''));
+      if (numericAmount > 10000) {
+        setCurrentStep('captcha');
+      } else {
+        setCurrentStep('pin');
+      }
     }
+  };
+
+  const handleCaptchaComplete = () => {
+    setCurrentStep('pin');
+  };
+
+  const handleCaptchaBack = () => {
+    setCurrentStep(transferMethod === 'bank' ? 'details' : 'method');
   };
 
   const handlePinComplete = () => {
@@ -85,10 +99,26 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
     setBankName('');
     setPhoneNumber('');
     setTransferMethod('phone');
+    setIsLoading(false);
   };
 
   const getSelectedContactInfo = () => {
     return recentContacts.find(contact => contact.id === selectedContact);
+  };
+
+  const getRecipientInfo = () => {
+    if (transferMethod === 'phone' && selectedContact) {
+      const contact = getSelectedContactInfo();
+      return contact ? `${contact.name} (${contact.phone})` : 'Selected Contact';
+    } else if (transferMethod === 'phone' && phoneNumber) {
+      return phoneNumber;
+    } else if (transferMethod === 'upi') {
+      return upiId;
+    } else if (transferMethod === 'bank') {
+      return `${accountHolderName} (${bankName})`;
+    } else {
+      return 'QR Code Recipient';
+    }
   };
 
   const renderMethodSelection = () => (
@@ -446,6 +476,16 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
     </View>
   );
 
+  const renderCaptchaScreen = () => (
+    <CaptchaScreen 
+      key={`captcha-${amount}-${getRecipientInfo()}-${Date.now()}`}
+      onComplete={handleCaptchaComplete}
+      onBack={handleCaptchaBack}
+      amount={amount}
+      recipientInfo={getRecipientInfo()}
+    />
+  );
+
   const renderPinEntry = () => (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -662,6 +702,8 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
     return renderMethodSelection();
   } else if (currentStep === 'details' && transferMethod === 'bank') {
     return renderBankDetailsForm();
+  } else if (currentStep === 'captcha') {
+    return renderCaptchaScreen();
   } else if (currentStep === 'pin') {
     return renderPinEntry();
   } else if (currentStep === 'success') {
