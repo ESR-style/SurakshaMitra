@@ -8,6 +8,7 @@ import { MainScreen } from './screens/MainScreen';
 import { SendMoneyScreen } from './screens/SendMoneyScreen';
 import { CardsScreen } from './screens/CardsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { DatasetScreen } from './screens/DatasetScreen';
 import { EmulatorDetection } from './components/EmulatorDetection';
 
 import './global.css';
@@ -28,7 +29,7 @@ console.warn = (...args) => {
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<'pin' | 'twoFactor' | 'main' | 'sendMoney' | 'cards' | 'profile'>('pin');
+  const [currentScreen, setCurrentScreen] = useState<'pin' | 'twoFactor' | 'main' | 'sendMoney' | 'cards' | 'profile' | 'datasets'>('pin');
   const [showWifiPopup, setShowWifiPopup] = useState(false);
   const [mainScreenVisitCount, setMainScreenVisitCount] = useState(0); // Track visits to main screen
   const [isHandlingNavigation, setIsHandlingNavigation] = useState(false); // Prevent double navigation logging
@@ -125,6 +126,14 @@ export default function App() {
     setCurrentScreen('profile');
   };
 
+  const handleNavigateToDatasets = () => {
+    setCurrentScreen('datasets');
+  };
+
+  const handleBackToProfile = () => {
+    setCurrentScreen('profile');
+  };
+
   const handleFirstActionCompleted = () => {
     setSessionFirstActionCompleted(true);
     setIsFirstLoginToMain(false); // Mark that we're no longer in first login state
@@ -149,7 +158,13 @@ export default function App() {
   // Hardware back button handler for Android
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (currentScreen !== 'pin' && currentScreen !== 'twoFactor' && currentScreen !== 'main' && !isHandlingNavigation) {
+      if (currentScreen === 'datasets' && !isHandlingNavigation) {
+        setIsHandlingNavigation(true);
+        logNavigation('hardwareBack', currentScreen, 'profile');
+        setCurrentScreen('profile');
+        setTimeout(() => setIsHandlingNavigation(false), 100);
+        return true; // Prevent default behavior
+      } else if (currentScreen !== 'pin' && currentScreen !== 'twoFactor' && currentScreen !== 'main' && !isHandlingNavigation) {
         setIsHandlingNavigation(true);
         logNavigation('hardwareBack', currentScreen, 'main');
         setCurrentScreen('main');
@@ -187,7 +202,9 @@ export default function App() {
       case 'cards':
         return <CardsScreen onBack={handleBackToMainIcon} />;
       case 'profile':
-        return <ProfileScreen onBack={handleBackToMainIcon} />;
+        return <ProfileScreen onBack={handleBackToMainIcon} onNavigateToDatasets={handleNavigateToDatasets} />;
+      case 'datasets':
+        return <DatasetScreen onBack={handleBackToProfile} />;
       default:
         return <PinScreen onPinComplete={handlePinComplete} />;
     }

@@ -4,9 +4,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 interface ProfileScreenProps {
   onBack: () => void;
+  onNavigateToDatasets: () => void;
 }
 
-export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
+export const ProfileScreen = ({ onBack, onNavigateToDatasets }: ProfileScreenProps) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
@@ -38,6 +39,12 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
         { icon: 'language', label: 'Language', value: 'English', action: () => {} },
         { icon: 'palette', label: 'App Theme', value: 'Light Mode', action: () => {} },
         { icon: 'currency-rupee', label: 'Currency', value: 'INR (₹)', action: () => {} },
+      ]
+    },
+    {
+      title: 'Developer Tools',
+      items: [
+        { icon: 'dataset', label: 'Datasets', value: 'Manage collected data', action: onNavigateToDatasets },
       ]
     },
     {

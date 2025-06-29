@@ -11,6 +11,7 @@ import {
   PixelRatio,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -290,8 +291,65 @@ export const CaptchaScreen = ({ onComplete, onBack, amount, recipientInfo }: Cap
     };
   };
 
-  const logCaptchaDataCSV = () => {
+  const logCaptchaDataCSV = async () => {
     const data = calculateMetrics();
+    
+    // Store data in AsyncStorage for the DatasetScreen
+    try {
+      const captchaEntry = {
+        username: data.username || 'CaptchaUser',
+        captcha: data.captcha || '',
+        userInput: data.userInput || '',
+        isCorrect: data.isCorrect || false,
+        timestamp: data.timestamp || new Date().toISOString(),
+        totalTime: data.totalTime || 0,
+        wpm: data.wpm || 0,
+        backspaceCount: data.backspaceCount || 0,
+        avgFlightTime: data.avgFlightTime || 0,
+        avgDwellTime: data.avgDwellTime || 0,
+        avgInterKeyPause: data.avgInterKeyPause || 0,
+        sessionEntropy: data.sessionEntropy || 0,
+        keyDwellVariance: data.keyDwellVariance || 0,
+        interKeyVariance: data.interKeyVariance || 0,
+        pressureVariance: data.pressureVariance || 0,
+        touchAreaVariance: data.touchAreaVariance || 0,
+        avgTouchArea: data.avgTouchArea || 0,
+        avgPressure: data.avgPressure || 0,
+        avgCoordX: data.avgCoordX || 0,
+        avgCoordY: data.avgCoordY || 0,
+        avgErrorRecoveryTime: data.avgErrorRecoveryTime || 0,
+        characterCount: data.characterCount || 0,
+        // Store all the comprehensive data that's being logged
+        flightTimes: data.flightTimes || [],
+        dwellTimes: data.dwellTimes || [],
+        interKeyPauses: data.interKeyPauses || [],
+        typingPatternVector: data.typingPatternVector || [],
+        keyTimingsCount: (data.keyTimings || []).length,
+        touchEventsCount: (data.touchEvents || []).length,
+        errorRecoveryCount: (data.errorRecoveryEvents || []).length,
+        devicePlatform: data.deviceMetrics?.platform || 'unknown',
+        deviceScreenWidth: data.deviceMetrics?.screenWidth || 0,
+        deviceScreenHeight: data.deviceMetrics?.screenHeight || 0,
+        devicePixelRatio: data.deviceMetrics?.pixelRatio || 1,
+        keyTimings: data.keyTimings || [],
+        touchEvents: data.touchEvents || [],
+        errorRecoveryEvents: data.errorRecoveryEvents || [],
+        deviceMetrics: data.deviceMetrics || {},
+      };
+
+      // Use the global function if available, or store directly
+      if (global.addCaptchaData) {
+        await global.addCaptchaData(captchaEntry);
+      } else {
+        // Fallback: store directly in AsyncStorage
+        const storedData = await AsyncStorage.getItem('captchaDataset');
+        const existingData = storedData ? JSON.parse(storedData) : [];
+        const newData = [...existingData, { ...captchaEntry, id: Date.now().toString() }];
+        await AsyncStorage.setItem('captchaDataset', JSON.stringify(newData));
+      }
+    } catch (error) {
+      console.error('Error storing captcha data:', error);
+    }
     
     // Create CSV headers with all features (same as DatasetScreen.js)
     const headers = [
@@ -349,12 +407,12 @@ export const CaptchaScreen = ({ onComplete, onBack, amount, recipientInfo }: Cap
     console.log(row.join(','));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (userInput.trim() === '') {
       return;
     }
 
-    logCaptchaDataCSV();
+    await logCaptchaDataCSV();
     onComplete();
   };
 

@@ -23,6 +23,8 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
   const [detectionStarted, setDetectionStarted] = useState(false);
   const [detectionMethod, setDetectionMethod] = useState<string>(''); // Track detection method
   const subscriptionRef = useRef<any>(null);
+  const alternativeSubscriptionRef = useRef<any>(null); // For accelerometer cleanup
+  const detectionCompletedRef = useRef<boolean>(false); // Prevent multiple completions - using ref for closure access
 
   useEffect(() => {
     if (!isActive || isMonitoring || detectionStarted) return;
@@ -34,6 +36,7 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
 
     setIsMonitoring(true);
     setDetectionStarted(true); // Mark detection as started
+    detectionCompletedRef.current = false; // Reset completion flag
     const readings: GyroReading[] = [];
 
     // Start gyroscope monitoring
@@ -164,7 +167,9 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
                 maxReading,
                 timestamp: new Date().toISOString() 
               }));
-              analyzeReadings(readings, 'Early Movement Detection');
+              if (!detectionCompletedRef.current) {
+                analyzeReadings(readings, 'Early Movement Detection');
+              }
             }
           });
 
@@ -218,9 +223,13 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
               hasSignificantMovement,
               maxReading,
               initialReadingReceived,
+              detectionCompleted: detectionCompletedRef.current,
               timestamp: new Date().toISOString() 
             }));
-            analyzeReadings(readings, 'Timeout Analysis');
+            // Only analyze if detection hasn't been completed by accelerometer
+            if (!detectionCompletedRef.current) {
+              analyzeReadings(readings, 'Timeout Analysis');
+            }
           }, 8000);
           
         } catch (sensorError) {
@@ -285,22 +294,32 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
 
             if (accelReadingCount >= 3) { // Get at least 3 readings
               accelSubscription.remove();
+              alternativeSubscriptionRef.current = null;
               console.log(JSON.stringify({ 
                 emulatorDetection: 'accelerometer_readings_collected',
                 totalReadings: accelReadings.length,
+                detectionCompleted: detectionCompletedRef.current,
                 timestamp: new Date().toISOString() 
               }));
               setDetectionMethod('Accelerometer Fallback');
-              analyzeReadings(accelReadings, 'Accelerometer Analysis');
+              if (!detectionCompletedRef.current) {
+                analyzeReadings(accelReadings, 'Accelerometer Analysis');
+              }
             }
           });
+          
+          alternativeSubscriptionRef.current = accelSubscription;
 
           // Timeout for accelerometer
           setTimeout(() => {
-            accelSubscription.remove();
-            if (accelReadings.length === 0) {
+            if (alternativeSubscriptionRef.current) {
+              alternativeSubscriptionRef.current.remove();
+              alternativeSubscriptionRef.current = null;
+            }
+            if (accelReadings.length === 0 && !detectionCompletedRef.current) {
               console.log(JSON.stringify({ 
                 emulatorDetection: 'accelerometer_also_failed',
+                detectionCompleted: detectionCompletedRef.current,
                 timestamp: new Date().toISOString() 
               }));
               setDetectionMethod('All Sensors Failed');
@@ -328,6 +347,16 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
     };
 
     const analyzeReadings = (readings: GyroReading[], analysisType: string) => {
+      // Prevent multiple analyses
+      if (detectionCompletedRef.current) {
+        console.log(JSON.stringify({ 
+          emulatorDetection: 'analysis_skipped_already_completed',
+          analysisType,
+          timestamp: new Date().toISOString() 
+        }));
+        return;
+      }
+      
       console.log(JSON.stringify({ 
         emulatorDetection: 'sensor_analysis_starting',
         analysisType,
@@ -466,7 +495,34 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
     };
 
     const handleDetectionResult = (isEmulator: boolean) => {
+      // Prevent multiple detections
+      if (detectionCompletedRef.current) {
+        console.log(JSON.stringify({ 
+          emulatorDetection: 'detection_result_ignored_already_completed',
+          attemptedResult: isEmulator ? 'emulator' : 'real_device',
+          timestamp: new Date().toISOString() 
+        }));
+        return;
+      }
+      
+      detectionCompletedRef.current = true;
       setIsMonitoring(false);
+      
+      // Clean up all subscriptions
+      if (subscriptionRef.current) {
+        subscriptionRef.current.remove();
+        subscriptionRef.current = null;
+      }
+      if (alternativeSubscriptionRef.current) {
+        alternativeSubscriptionRef.current.remove();
+        alternativeSubscriptionRef.current = null;
+      }
+      
+      console.log(JSON.stringify({ 
+        emulatorDetectionResult: isEmulator ? 'emulator_detected' : 'real_device',
+        timestamp: new Date().toISOString() 
+      }));
+      
       if (isEmulator) {
         setShowAlert(true);
       }
@@ -481,6 +537,10 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
         subscriptionRef.current.remove();
         subscriptionRef.current = null;
       }
+      if (alternativeSubscriptionRef.current) {
+        alternativeSubscriptionRef.current.remove();
+        alternativeSubscriptionRef.current = null;
+      }
       setIsMonitoring(false);
     };
   }, [isActive, isMonitoring, detectionStarted]);
@@ -491,6 +551,10 @@ export const EmulatorDetection = ({ isActive, onDetectionComplete }: EmulatorDet
       if (subscriptionRef.current) {
         subscriptionRef.current.remove();
         subscriptionRef.current = null;
+      }
+      if (alternativeSubscriptionRef.current) {
+        alternativeSubscriptionRef.current.remove();
+        alternativeSubscriptionRef.current = null;
       }
     };
   }, []);
