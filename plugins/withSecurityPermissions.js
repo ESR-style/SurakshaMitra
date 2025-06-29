@@ -7,7 +7,9 @@ const withSecurityPermissions = (config) => {
     // Add necessary permissions
     const permissions = [
       'android.permission.ACCESS_NETWORK_STATE',
-      'android.permission.BATTERY_STATS'
+      'android.permission.BATTERY_STATS',
+      'android.permission.HIGH_SAMPLING_RATE_SENSORS',
+      'android.permission.BODY_SENSORS'
     ];
     
     permissions.forEach(permission => {
