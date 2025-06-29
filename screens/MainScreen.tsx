@@ -47,7 +47,7 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
       
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="bg-white pt-16 pb-6 px-6 shadow-sm">
+        <View className="bg-white pt-8 pb-3 px-6 shadow-sm">
           <View className="flex-row items-center justify-between mb-6">
             <View className="flex-row items-center">
               <View className="w-12 h-12 rounded-full bg-blue-600 items-center justify-center mr-4 shadow-lg">
@@ -73,36 +73,36 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
         </View>
 
         {/* Portfolio Card */}
-        <View className="px-6 pt-6 mb-8">
+        <View className="px-6 pt-3 mb-8">
           <LinearGradient
             colors={['#1e40af', '#3b82f6', '#60a5fa']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="rounded-3xl p-8 shadow-lg"
           >
-            <View className="flex-row items-center justify-between mb-6">
+            <View className="flex-row items-center justify-between mb-3 m">
               <Text className="text-white text-2xl font-bold">My Portfolio</Text>
               <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
                 <Text className="text-white font-bold text-lg">SB</Text>
               </View>
             </View>
 
-            <View className="space-y-6">
+            <View className="space-y-6 ">
               {/* 2x2 Grid Layout with proper spacing */}
-              <View className="space-y-4">
+              <View className="space-y-2 mb-5 mt-3">
                 {/* Top Row */}
                 <View className="flex-row space-x-4">
-                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
-                    <View className="flex-row items-center mb-2">
+                  <View className="flex-1 bg-white/10 rounded-1xl p-3 mx-3">
+                    <View className="flex-row items-center mb-3">
                       <MaterialIcons name="account-balance-wallet" size={18} color="#FFF" />
-                      <Text className="text-white/80 text-sm ml-2 font-medium">Balance ( A/C )</Text>
+                      <Text className="text-white/80 text-sm ml-2 font-medium">Balance(A/C)</Text>
                     </View>
                     <Text className="text-white text-xl font-bold">
                       {showBalance ? '₹ 2,50,000' : '₹ ••••••'}
                     </Text>
                   </View>
 
-                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                  <View className="flex-1 bg-white/10 rounded-1xl p-4 ">
                     <View className="flex-row items-center mb-2">
                       <MaterialIcons name="credit-card" size={18} color="#FFF" />
                       <Text className="text-white/80 text-sm ml-2 font-medium">OD Account ( A/C )</Text>
@@ -114,8 +114,8 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
                 </View>
 
                 {/* Bottom Row */}
-                <View className="flex-row space-x-4">
-                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                <View className="flex-row space-x-4 mt-3">
+                  <View className="flex-1 bg-white/10 rounded-1xl p-3 mx-3">
                     <View className="flex-row items-center mb-2">
                       <MaterialIcons name="home" size={18} color="#FFF" />
                       <Text className="text-white/80 text-sm ml-2 font-medium">Loans ( A/C )</Text>
@@ -125,10 +125,10 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
                     </Text>
                   </View>
 
-                  <View className="flex-1 bg-white/10 rounded-2xl p-4">
+                  <View className="flex-1 bg-white/10 rounded-1xl p-3">
                     <View className="flex-row items-center mb-2">
                       <MaterialIcons name="savings" size={18} color="#FFF" />
-                      <Text className="text-white/80 text-sm ml-2 font-medium">Deposits ( A/C )</Text>
+                      <Text className="text-white/80 text-sm ml-2 font-medium">Deposits(A/C)</Text>
                     </View>
                     <Text className="text-white text-xl font-bold">
                       {showBalance ? '₹ 5,75,000' : '₹ ••••••••'}
