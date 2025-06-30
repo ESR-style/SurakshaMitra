@@ -39,6 +39,11 @@
         "android.permission.HIGH_SAMPLING_RATE_SENSORS",
         "android.permission.BODY_SENSORS"
       ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d5b11410-56fd-4edf-89aa-0efe64fcfae4"
+      }
     }
   }
 }
