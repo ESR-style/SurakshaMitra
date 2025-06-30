@@ -47,7 +47,7 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
       
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="bg-white pt-8 pb-3 px-6 shadow-sm">
+        <View className="bg-white pt-12 pb-3 px-6 shadow-sm">
           <View className="flex-row items-center justify-between mb-6">
             <View className="flex-row items-center">
               <View className="w-12 h-12 rounded-full bg-blue-600 items-center justify-center mr-4 shadow-lg">

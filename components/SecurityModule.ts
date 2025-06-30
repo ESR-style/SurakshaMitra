@@ -147,42 +147,73 @@ class SecurityModule {
 
   /**
    * Check if USB debugging is enabled
-   * Enhanced detection using multiple indicators
+   * More accurate detection focusing on actual USB debugging indicators
    */
   private async checkUSBDebugging(): Promise<boolean> {
     try {
-      // In Expo managed workflow, USB debugging is typically enabled in dev mode
-      if (__DEV__) {
+      // For iOS, USB debugging doesn't apply in the same way
+      if (Platform.OS === 'ios') {
+        return false;
+      }
+
+      // In production builds, USB debugging should be false unless specifically detected
+      if (!__DEV__ && Constants.appOwnership !== 'expo') {
+        return false;
+      }
+
+      // Check if remote debugger is actually connected (this is a stronger indicator)
+      const hasRemoteDebugger = (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ && 
+                                (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__.isDisabled === false;
+      
+      if (hasRemoteDebugger) {
         return true;
       }
 
-      // If running in Expo development client, USB debugging is likely enabled
-      if (Constants.appOwnership === 'expo') {
+      // Check for active development server connection (more specific check)
+      if (Constants.linkingUrl) {
+        const url = Constants.linkingUrl;
+        // Only flag as USB debugging if actively connected to development server
+        const isActiveDevConnection = (
+          url.includes(':8081') || 
+          url.includes(':19000') ||
+          url.includes(':19001')
+        ) && (
+          url.includes('localhost') || 
+          url.includes('127.0.0.1') || 
+          url.includes('192.168') ||
+          url.includes('10.0.2.2') // Android emulator host
+        );
+        
+        if (isActiveDevConnection) {
+          return true;
+        }
+      }
+
+      // Check if Metro bundler is actively running (stronger indicator)
+      const hasActiveMetro = typeof (global as any).__BUNDLE_START_TIME__ !== 'undefined' && 
+                            typeof (global as any).__fbBatchedBridge !== 'undefined';
+      
+      if (hasActiveMetro) {
         return true;
       }
 
-      // Check if remote debugger is connected
-      if ((global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-        return true;
-      }
-
-      // Check for development server connection indicators
-      if (Constants.linkingUrl && (
-        Constants.linkingUrl.includes(':8081') || 
-        Constants.linkingUrl.includes(':19000') ||
-        Constants.linkingUrl.includes(':19001')
-      )) {
-        return true;
-      }
-
-      // Enhanced check - if we can detect metro bundler connection
-      if (typeof (global as any).__BUNDLE_START_TIME__ !== 'undefined') {
-        return true;
-      }
-
-      // Check for development environment indicators
-      if (Constants.manifest?.developer) {
-        return true;
+      // Only in development mode with Expo client, consider USB debugging enabled
+      if (__DEV__ && Constants.appOwnership === 'expo') {
+        // Additional check: see if we can detect ADB connection indicators
+        try {
+          // Check for development-specific global variables that indicate USB debugging
+          const hasDevGlobals = typeof (global as any).__DEV__ !== 'undefined' && 
+                               typeof (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined';
+          
+          if (hasDevGlobals && Constants.linkingUrl) {
+            return true;
+          }
+        } catch (error) {
+          // Ignore errors in this additional check
+        }
+        
+        // Default to false for Expo development unless clear indicators
+        return false;
       }
 
       return false;
@@ -416,10 +447,11 @@ class SecurityModule {
           'Device type analysis'
         ],
         usbDebugging: [
-          'Development environment detection',
-          'React DevTools connection',
-          'Metro bundler detection',
-          'Development server ports'
+          'Remote debugger connection',
+          'Active development server connection',
+          'Metro bundler activity detection',
+          'ADB connection indicators',
+          'Development global variables'
         ],
         emulator: [
           'Device.isDevice check',
