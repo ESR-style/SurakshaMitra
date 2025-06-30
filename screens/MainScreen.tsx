@@ -103,9 +103,9 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
                   </View>
 
                   <View className="flex-1 bg-white/10 rounded-1xl p-4 ">
-                    <View className="flex-row items-center mb-2">
+                    <View className="flex-row items-center mb-1">
                       <MaterialIcons name="credit-card" size={18} color="#FFF" />
-                      <Text className="text-white/80 text-sm ml-2 font-medium">OD Account ( A/C )</Text>
+                      <Text className="text-white/80 text-sm ml-1 font-medium">OD Account(A/C)</Text>
                     </View>
                     <Text className="text-white text-xl font-bold">
                       {showBalance ? '₹ 45,000' : '₹ ••••••'}
