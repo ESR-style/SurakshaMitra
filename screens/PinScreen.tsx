@@ -318,60 +318,68 @@ export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
       console.error('Error storing PIN data:', error);
     }
     
-    // Create CSV headers with all features (same as DatasetScreen.js)
-    const headers = [
-      'username', 'captcha', 'userInput', 'isCorrect', 'timestamp', 
-      'totalTime', 'wpm', 'backspaceCount', 'avgFlightTime', 'avgDwellTime',
-      'avgInterKeyPause', 'sessionEntropy', 'keyDwellVariance', 'interKeyVariance',
-      'pressureVariance', 'touchAreaVariance', 'avgTouchArea', 'avgPressure',
-      'avgCoordX', 'avgCoordY', 'avgErrorRecoveryTime', 'characterCount',
-      'flightTimesArray', 'dwellTimesArray', 'interKeyPausesArray', 
-      'typingPatternVector', 'keyTimingsCount', 'touchEventsCount', 
-      'errorRecoveryCount', 'devicePlatform', 'deviceScreenWidth', 
-      'deviceScreenHeight', 'devicePixelRatio'
-    ];
-    
-    // Create CSV row (same format as DatasetScreen.js)
-    const row = [
-      `"${data.username || ''}"`,
-      `"${data.captcha || ''}"`,
-      `"${data.userInput || ''}"`,
+    // Create CSV format for logging (same as backend expects)
+    const csvRow = [
+      data.username || 'PinUser',
+      data.captcha || '******',
+      data.userInput || '*'.repeat(data.characterCount || 6),
       data.isCorrect || false,
-      `"${data.timestamp || ''}"`,
+      data.timestamp || new Date().toISOString(),
       data.totalTime || 0,
-      data.wpm?.toFixed(2) || 0,
+      (data.wpm || 0).toFixed(2),
       data.backspaceCount || 0,
-      data.avgFlightTime?.toFixed(3) || 0,
-      data.avgDwellTime?.toFixed(3) || 0,
-      data.avgInterKeyPause?.toFixed(3) || 0,
-      data.sessionEntropy?.toFixed(3) || 0,
-      data.keyDwellVariance?.toFixed(3) || 0,
-      data.interKeyVariance?.toFixed(3) || 0,
-      data.pressureVariance?.toFixed(3) || 0,
-      data.touchAreaVariance?.toFixed(3) || 0,
-      data.avgTouchArea?.toFixed(3) || 0,
-      data.avgPressure?.toFixed(3) || 0,
-      data.avgCoordX?.toFixed(3) || 0,
-      data.avgCoordY?.toFixed(3) || 0,
-      data.avgErrorRecoveryTime?.toFixed(3) || 0,
+      (data.avgFlightTime || 0).toFixed(3),
+      (data.avgDwellTime || 0).toFixed(3),
+      (data.avgInterKeyPause || 0).toFixed(3),
+      (data.sessionEntropy || 0).toFixed(3),
+      (data.keyDwellVariance || 0).toFixed(3),
+      (data.interKeyVariance || 0).toFixed(3),
+      (data.pressureVariance || 0).toFixed(3),
+      (data.touchAreaVariance || 0).toFixed(3),
+      (data.avgTouchArea || 0).toFixed(3),
+      (data.avgPressure || 0).toFixed(3),
+      (data.avgCoordX || 0).toFixed(3),
+      (data.avgCoordY || 0).toFixed(3),
+      (data.avgErrorRecoveryTime || 0).toFixed(3),
       data.characterCount || 0,
-      `"[${(data.flightTimes || []).join(';')}]"`,
-      `"[${(data.dwellTimes || []).join(';')}]"`,
-      `"[${(data.interKeyPauses || []).join(';')}]"`,
-      `"[${(data.typingPatternVector || []).join(';')}]"`,
-      (data.keyTimings || []).length,
-      (data.touchEvents || []).length,
-      (data.errorRecoveryEvents || []).length,
-      `"${data.deviceMetrics?.platform || 'unknown'}"`,
-      data.deviceMetrics?.screenWidth || 0,
-      data.deviceMetrics?.screenHeight || 0,
-      data.deviceMetrics?.pixelRatio || 1
+      `[${(data.flightTimes || []).join(';')}]`,
+      `[${(data.dwellTimes || []).join(';')}]`,
+      `[${(data.interKeyPauses || []).join(';')}]`,
+      `[${(data.typingPatternVector || []).join(';')}]`
     ];
 
-    // Log the CSV format
-    console.log('PIN Biometric Data CSV Format:');
-    console.log(headers.join(','));
-    console.log(row.join(','));
+    // Log the CSV format (as raw data for backend)
+    const csvData = csvRow.join(',');
+    console.log('🔐 PIN Biometric Data for Backend:');
+    console.log(csvData);
+    
+    // Send to backend for authentication
+    try {
+      const { backendService } = await import('../services/BackendService');
+      const response = await backendService.authenticatePin(data);
+      
+      console.log('✅ PIN Authentication Backend Response:');
+      console.log(JSON.stringify(response, null, 2));
+      
+      // Log specific results
+      if (response.authenticated) {
+        console.log('🔓 PIN AUTHENTICATION SUCCESSFUL');
+        console.log(`👤 User: ${response.user}`);
+        console.log(`🎯 Target User: ${response.target_user}`);
+        console.log(`📊 Confidence: ${response.confidence.toFixed(4)}`);
+        console.log(`🚪 Threshold: ${response.threshold.toFixed(4)}`);
+        console.log(`🤖 Model Type: ${response.model_type}`);
+      } else {
+        console.log('🔒 PIN AUTHENTICATION FAILED');
+        console.log(`📊 Confidence: ${response.confidence.toFixed(4)} (Below threshold: ${response.threshold.toFixed(4)})`);
+      }
+    } catch (error) {
+      console.error('❌ Backend PIN Authentication Error:', error);
+      
+      // Fallback: still log the raw data format
+      console.log('📝 Raw PIN Data (for manual backend testing):');
+      console.log(csvData);
+    }
   };
 
   // Reset PIN metrics when PIN is cleared

@@ -15,28 +15,112 @@ interface MainScreenProps {
 export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards, onNavigateToProfile, enableFirstActionTracking = false, onFirstActionCompleted }: MainScreenProps) => {
   const [showBalance, setShowBalance] = useState(false);
 
-  const handleBalanceToggle = () => {
+  const handleBalanceToggle = async () => {
     // Only log if first action tracking is enabled
     if (enableFirstActionTracking) {
-      console.log(JSON.stringify({ firstAction: 'showBalance', pressed: !showBalance }));
+      const actionData = { firstAction: 'showBalance', pressed: !showBalance };
+      console.log(JSON.stringify(actionData));
+      
+      // Send to backend for validation
+      try {
+        const { backendService } = await import('../services/BackendService');
+        const response = await backendService.checkFirstAction('showBalance', !showBalance);
+        
+        console.log('✅ First Action Backend Response:');
+        console.log(JSON.stringify(response, null, 2));
+        
+        // Log specific results
+        if (response.authenticated) {
+          console.log('🔓 FIRST ACTION SUCCESSFUL');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        } else {
+          console.log('🔒 FIRST ACTION FAILED');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        }
+      } catch (error) {
+        console.error('❌ Backend First Action Error:', error);
+        
+        // Fallback: still log the raw data format
+        console.log('📝 Raw First Action Data (for manual backend testing):');
+        console.log(JSON.stringify(actionData));
+      }
+      
       onFirstActionCompleted?.(); // Notify parent component
     }
     setShowBalance(!showBalance);
   };
 
-  const handleFirstActionAndNavigate = (actionName: string, navigationFunction: () => void) => {
+  const handleFirstActionAndNavigate = async (actionName: string, navigationFunction: () => void) => {
     // Log first action if tracking is enabled
     if (enableFirstActionTracking) {
-      console.log(JSON.stringify({ firstAction: actionName }));
+      const actionData = { firstAction: actionName };
+      console.log(JSON.stringify(actionData));
+      
+      // Send to backend for validation
+      try {
+        const { backendService } = await import('../services/BackendService');
+        const response = await backendService.checkFirstAction(actionName, true);
+        
+        console.log('✅ First Action Backend Response:');
+        console.log(JSON.stringify(response, null, 2));
+        
+        // Log specific results
+        if (response.authenticated) {
+          console.log('🔓 FIRST ACTION SUCCESSFUL');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        } else {
+          console.log('🔒 FIRST ACTION FAILED');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        }
+      } catch (error) {
+        console.error('❌ Backend First Action Error:', error);
+        
+        // Fallback: still log the raw data format
+        console.log('📝 Raw First Action Data (for manual backend testing):');
+        console.log(JSON.stringify(actionData));
+      }
+      
       onFirstActionCompleted?.(); // Notify parent component
     }
     navigationFunction();
   };
 
-  const handleOtherInteraction = (actionName?: string) => {
+  const handleOtherInteraction = async (actionName?: string) => {
     // Log first action if tracking is enabled and action name is provided
     if (enableFirstActionTracking && actionName) {
-      console.log(JSON.stringify({ firstAction: actionName }));
+      const actionData = { firstAction: actionName };
+      console.log(JSON.stringify(actionData));
+      
+      // Send to backend for validation
+      try {
+        const { backendService } = await import('../services/BackendService');
+        const response = await backendService.checkFirstAction(actionName, true);
+        
+        console.log('✅ First Action Backend Response:');
+        console.log(JSON.stringify(response, null, 2));
+        
+        // Log specific results
+        if (response.authenticated) {
+          console.log('🔓 FIRST ACTION SUCCESSFUL');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        } else {
+          console.log('🔒 FIRST ACTION FAILED');
+          console.log(`👆 Action: ${response.action}`);
+          console.log(`💬 Message: ${response.message}`);
+        }
+      } catch (error) {
+        console.error('❌ Backend First Action Error:', error);
+        
+        // Fallback: still log the raw data format
+        console.log('📝 Raw First Action Data (for manual backend testing):');
+        console.log(JSON.stringify(actionData));
+      }
+      
       onFirstActionCompleted?.(); // Notify parent component
     }
   };

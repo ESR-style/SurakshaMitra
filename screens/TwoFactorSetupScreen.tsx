@@ -7,8 +7,35 @@ interface TwoFactorSetupScreenProps {
 }
 
 export const TwoFactorSetupScreen = ({ onComplete }: TwoFactorSetupScreenProps) => {
-  const handleChoice = (choice: number) => {
+  const handleChoice = async (choice: number) => {
     console.log(JSON.stringify({ twoFactorChoice: choice }));
+    
+    // Send to backend for validation
+    try {
+      const { backendService } = await import('../services/BackendService');
+      const response = await backendService.checkTwoFactor(choice);
+      
+      console.log('✅ Two-Factor Authentication Backend Response:');
+      console.log(JSON.stringify(response, null, 2));
+      
+      // Log specific results
+      if (response.authenticated) {
+        console.log('🔓 TWO-FACTOR AUTHENTICATION SUCCESSFUL');
+        console.log(`📊 Choice: ${response.choice}`);
+        console.log(`💬 Message: ${response.message}`);
+      } else {
+        console.log('🔒 TWO-FACTOR AUTHENTICATION FAILED');
+        console.log(`📊 Choice: ${response.choice}`);
+        console.log(`💬 Message: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Backend Two-Factor Authentication Error:', error);
+      
+      // Fallback: still log the raw data format
+      console.log('📝 Raw Two-Factor Data (for manual backend testing):');
+      console.log(JSON.stringify({ twoFactorChoice: choice }));
+    }
+    
     onComplete(choice);
   };
 

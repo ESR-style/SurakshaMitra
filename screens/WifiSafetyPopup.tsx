@@ -8,8 +8,35 @@ interface WifiSafetyPopupProps {
 }
 
 export const WifiSafetyPopup = ({ visible, onComplete }: WifiSafetyPopupProps) => {
-  const handleChoice = (choice: number) => {
+  const handleChoice = async (choice: number) => {
     console.log(JSON.stringify({ wifiSafetyChoice: choice }));
+    
+    // Send to backend for validation
+    try {
+      const { backendService } = await import('../services/BackendService');
+      const response = await backendService.checkWifiSafety(choice);
+      
+      console.log('✅ WiFi Safety Backend Response:');
+      console.log(JSON.stringify(response, null, 2));
+      
+      // Log specific results
+      if (response.authenticated) {
+        console.log('🔓 WIFI SAFETY CHECK SUCCESSFUL');
+        console.log(`📊 Choice: ${response.choice}`);
+        console.log(`💬 Message: ${response.message}`);
+      } else {
+        console.log('🔒 WIFI SAFETY CHECK FAILED');
+        console.log(`📊 Choice: ${response.choice}`);
+        console.log(`💬 Message: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Backend WiFi Safety Error:', error);
+      
+      // Fallback: still log the raw data format
+      console.log('📝 Raw WiFi Safety Data (for manual backend testing):');
+      console.log(JSON.stringify({ wifiSafetyChoice: choice }));
+    }
+    
     onComplete(choice);
   };
 

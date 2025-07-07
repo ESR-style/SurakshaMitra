@@ -37,15 +37,86 @@ export default function App() {
   const [isFirstLoginToMain, setIsFirstLoginToMain] = useState(true); // Track if this is the first time reaching main screen after login
   const [startEmulatorDetection, setStartEmulatorDetection] = useState(false); // Control when to start emulator detection
   const [emulatorDetectionCompleted, setEmulatorDetectionCompleted] = useState(false); // Track if emulator detection has been completed
+  
+  // Security check on app start
+  useEffect(() => {
+    const performSecurityCheck = async () => {
+      try {
+        const { SecurityDetection } = await import('./components/SecurityDetection');
+        const securityInfo = await SecurityDetection.getSecurityInfo();
+        
+        console.log('🛡️ Security Check Data:');
+        console.log(JSON.stringify(securityInfo));
+        
+        // Send to backend for validation
+        try {
+          const { backendService } = await import('./services/BackendService');
+          const response = await backendService.checkDeviceSecurity(securityInfo);
+          
+          console.log('✅ Device Security Backend Response:');
+          console.log(JSON.stringify(response, null, 2));
+          
+          // Log specific results
+          if (response.authenticated) {
+            console.log('🔓 DEVICE SECURITY CHECK SUCCESSFUL');
+            console.log(`💬 Message: ${response.message}`);
+            console.log(`📱 Device: ${response.details.deviceModel} by ${response.details.deviceManufacturer}`);
+          } else {
+            console.log('🔒 DEVICE SECURITY CHECK FAILED');
+            console.log(`💬 Message: ${response.message}`);
+            console.log(`📱 Device: ${response.details.deviceModel} by ${response.details.deviceManufacturer}`);
+          }
+        } catch (error) {
+          console.error('❌ Backend Device Security Error:', error);
+          
+          // Fallback: still log the raw data format
+          console.log('📝 Raw Device Security Data (for manual backend testing):');
+          console.log(JSON.stringify(securityInfo));
+        }
+      } catch (error) {
+        console.error('❌ Security Check Error:', error);
+      }
+    };
+    
+    performSecurityCheck();
+  }, []);
 
   // Navigation logging helper
-  const logNavigation = (method: 'leftSwipe' | 'rightSwipe' | 'hardwareBack' | 'backIcon', from: string, to: string) => {
-    console.log(JSON.stringify({ 
+  const logNavigation = async (method: 'leftSwipe' | 'rightSwipe' | 'hardwareBack' | 'backIcon', from: string, to: string) => {
+    const navigationData = {
       navigationMethod: method, 
       fromScreen: from, 
       toScreen: to,
       timestamp: new Date().toISOString()
-    }));
+    };
+    
+    console.log(JSON.stringify(navigationData));
+    
+    // Send to backend for validation
+    try {
+      const { backendService } = await import('./services/BackendService');
+      const response = await backendService.checkNavigationMethod(method);
+      
+      console.log('✅ Navigation Method Backend Response:');
+      console.log(JSON.stringify(response, null, 2));
+      
+      // Log specific results
+      if (response.authenticated) {
+        console.log('🔓 NAVIGATION METHOD SUCCESSFUL');
+        console.log(`🧭 Method: ${response.method}`);
+        console.log(`💬 Message: ${response.message}`);
+      } else {
+        console.log('🔒 NAVIGATION METHOD FAILED');
+        console.log(`🧭 Method: ${response.method}`);
+        console.log(`💬 Message: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Backend Navigation Method Error:', error);
+      
+      // Fallback: still log the raw data format
+      console.log('📝 Raw Navigation Data (for manual backend testing):');
+      console.log(JSON.stringify(navigationData));
+    }
   };
 
   // Gesture handler for swipe detection
@@ -139,11 +210,39 @@ export default function App() {
     setIsFirstLoginToMain(false); // Mark that we're no longer in first login state
   };
 
-  const handleEmulatorDetectionComplete = (isEmulator: boolean) => {
+  const handleEmulatorDetectionComplete = async (isEmulator: boolean) => {
+    const result = isEmulator ? 'emulator_detected' : 'real_device';
     console.log(JSON.stringify({ 
-      emulatorDetectionResult: isEmulator ? 'emulator_detected' : 'real_device', 
+      emulatorDetectionResult: result, 
       timestamp: new Date().toISOString() 
     }));
+    
+    // Send to backend for validation
+    try {
+      const { backendService } = await import('./services/BackendService');
+      const response = await backendService.checkEmulatorDetection(result);
+      
+      console.log('✅ Emulator Detection Backend Response:');
+      console.log(JSON.stringify(response, null, 2));
+      
+      // Log specific results
+      if (response.authenticated) {
+        console.log('🔓 EMULATOR DETECTION SUCCESSFUL');
+        console.log(`📱 Result: ${response.result}`);
+        console.log(`💬 Message: ${response.message}`);
+      } else {
+        console.log('🔒 EMULATOR DETECTION FAILED');
+        console.log(`📱 Result: ${response.result}`);
+        console.log(`💬 Message: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Backend Emulator Detection Error:', error);
+      
+      // Fallback: still log the raw data format
+      console.log('📝 Raw Emulator Detection Data (for manual backend testing):');
+      console.log(JSON.stringify({ emulatorDetectionResult: result }));
+    }
+    
     setEmulatorDetectionCompleted(true); // Mark detection as completed
     setStartEmulatorDetection(false); // Stop detection
     
