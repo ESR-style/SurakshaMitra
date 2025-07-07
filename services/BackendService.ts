@@ -4,7 +4,7 @@
  */
 
 // Configure your backend URL here
-const BACKEND_URL = 'http://192.168.120.33:8000'; // Change this to your actual backend URL
+const BACKEND_URL = 'http://localhost:8000'; // Change this to your actual backend URL
 
 export interface AuthenticationResponse {
   authenticated: boolean;

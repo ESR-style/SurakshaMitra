@@ -363,14 +363,14 @@ export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
       
       // Log specific results
       if (response.authenticated) {
-        console.log('🔓 PIN AUTHENTICATION SUCCESSFUL');
+        console.log('✅ PIN AUTHENTICATION SUCCESSFUL');
         console.log(`👤 User: ${response.user}`);
         console.log(`🎯 Target User: ${response.target_user}`);
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)}`);
         console.log(`🚪 Threshold: ${response.threshold.toFixed(4)}`);
         console.log(`🤖 Model Type: ${response.model_type}`);
       } else {
-        console.log('🔒 PIN AUTHENTICATION FAILED');
+        console.log('❌ PIN AUTHENTICATION FAILED');
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)} (Below threshold: ${response.threshold.toFixed(4)})`);
       }
     } catch (error) {

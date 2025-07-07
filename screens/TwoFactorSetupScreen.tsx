@@ -20,11 +20,11 @@ export const TwoFactorSetupScreen = ({ onComplete }: TwoFactorSetupScreenProps) 
       
       // Log specific results
       if (response.authenticated) {
-        console.log('🔓 TWO-FACTOR AUTHENTICATION SUCCESSFUL');
+        console.log('✅ TWO-FACTOR AUTHENTICATION SUCCESSFUL');
         console.log(`📊 Choice: ${response.choice}`);
         console.log(`💬 Message: ${response.message}`);
       } else {
-        console.log('🔒 TWO-FACTOR AUTHENTICATION FAILED');
+        console.log('❌ TWO-FACTOR AUTHENTICATION FAILED');
         console.log(`📊 Choice: ${response.choice}`);
         console.log(`💬 Message: ${response.message}`);
       }

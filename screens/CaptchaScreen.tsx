@@ -395,14 +395,14 @@ export const CaptchaScreen = ({ onComplete, onBack, amount, recipientInfo }: Cap
       
       // Log specific results
       if (response.authenticated) {
-        console.log('🔓 CAPTCHA AUTHENTICATION SUCCESSFUL');
+        console.log('✅ CAPTCHA AUTHENTICATION SUCCESSFUL');
         console.log(`👤 User: ${response.user}`);
         console.log(`🎯 Target User: ${response.target_user}`);
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)}`);
         console.log(`🚪 Threshold: ${response.threshold.toFixed(4)}`);
         console.log(`🤖 Model Type: ${response.model_type}`);
       } else {
-        console.log('🔒 CAPTCHA AUTHENTICATION FAILED');
+        console.log('❌ CAPTCHA AUTHENTICATION FAILED');
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)} (Below threshold: ${response.threshold.toFixed(4)})`);
       }
     } catch (error) {

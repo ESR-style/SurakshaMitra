@@ -58,11 +58,11 @@ export default function App() {
           
           // Log specific results
           if (response.authenticated) {
-            console.log('🔓 DEVICE SECURITY CHECK SUCCESSFUL');
+            console.log('✅ DEVICE SECURITY CHECK SUCCESSFUL');
             console.log(`💬 Message: ${response.message}`);
             console.log(`📱 Device: ${response.details.deviceModel} by ${response.details.deviceManufacturer}`);
           } else {
-            console.log('🔒 DEVICE SECURITY CHECK FAILED');
+            console.log('❌ DEVICE SECURITY CHECK FAILED');
             console.log(`💬 Message: ${response.message}`);
             console.log(`📱 Device: ${response.details.deviceModel} by ${response.details.deviceManufacturer}`);
           }
@@ -102,11 +102,11 @@ export default function App() {
       
       // Log specific results
       if (response.authenticated) {
-        console.log('🔓 NAVIGATION METHOD SUCCESSFUL');
+        console.log('✅ NAVIGATION METHOD SUCCESSFUL');
         console.log(`🧭 Method: ${response.method}`);
         console.log(`💬 Message: ${response.message}`);
       } else {
-        console.log('🔒 NAVIGATION METHOD FAILED');
+        console.log('❌ NAVIGATION METHOD FAILED');
         console.log(`🧭 Method: ${response.method}`);
         console.log(`💬 Message: ${response.message}`);
       }

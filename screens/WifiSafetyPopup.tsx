@@ -21,11 +21,11 @@ export const WifiSafetyPopup = ({ visible, onComplete }: WifiSafetyPopupProps) =
       
       // Log specific results
       if (response.authenticated) {
-        console.log('🔓 WIFI SAFETY CHECK SUCCESSFUL');
+        console.log('✅ WIFI SAFETY CHECK SUCCESSFUL');
         console.log(`📊 Choice: ${response.choice}`);
         console.log(`💬 Message: ${response.message}`);
       } else {
-        console.log('🔒 WIFI SAFETY CHECK FAILED');
+        console.log('❌ WIFI SAFETY CHECK FAILED');
         console.log(`📊 Choice: ${response.choice}`);
         console.log(`💬 Message: ${response.message}`);
       }
