@@ -6,6 +6,9 @@
 // Configure your backend URL here
 const BACKEND_URL = 'http://64.227.187.22:8000'; // Change this to your actual backend URL
 
+// Add debugging for network issues
+const DEBUG_NETWORK = __DEV__;
+
 export interface AuthenticationResponse {
   authenticated: boolean;
   confidence: number;
@@ -94,6 +97,7 @@ export class BackendService {
         method,
         headers: {
           'Content-Type': contentType,
+          'Accept': 'application/json',
         },
       };
 
@@ -105,8 +109,10 @@ export class BackendService {
         }
       }
 
-      console.log(`🌐 Making ${method} request to: ${url}`);
-      console.log(`📤 Request data:`, data);
+      if (DEBUG_NETWORK) {
+        console.log(`🌐 Making ${method} request to: ${url}`);
+        console.log(`📤 Request data:`, data);
+      }
 
       const response = await fetch(url, config);
       
@@ -117,11 +123,30 @@ export class BackendService {
       }
 
       const responseData = await response.json();
-      console.log(`📥 Response received:`, responseData);
+      
+      if (DEBUG_NETWORK) {
+        console.log(`📥 Response received:`, responseData);
+      }
       
       return responseData;
     } catch (error) {
       console.error(`❌ Network error for ${endpoint}:`, error);
+      
+      // Provide more helpful error messages for production
+      if (error instanceof TypeError && error.message.includes('Network request failed')) {
+        throw new Error('Network connection failed. Please check your internet connection and ensure the server is accessible.');
+      }
+      
+      if (DEBUG_NETWORK) {
+        // In development, log more details
+        console.debug('🔍 Debug info:', {
+          endpoint,
+          method,
+          data,
+          contentType,
+          error,
+        });
+      }
       throw error;
     }
   }
