@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StatusBar, TextInput, ScrollView, Dimensi
 import { MaterialIcons } from '@expo/vector-icons';
 import { SecurityAlert } from '../components/SecurityAlert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthResultsLogger } from '../services/AuthResultsLogger';
 
 // Global type declaration
 declare global {
@@ -361,20 +362,35 @@ export const PinScreen = ({ onPinComplete }: PinScreenProps) => {
       console.log('✅ PIN Authentication Backend Response:');
       console.log(JSON.stringify(response, null, 2));
       
-      // Log specific results
+      // Log specific results and store in AuthResultsLogger
+      const authLogger = AuthResultsLogger.getInstance();
+      
       if (response.authenticated) {
+        const successMessage = `✅ PIN AUTHENTICATION SUCCESSFUL - User: ${response.user}, Target: ${response.target_user}, Confidence: ${response.confidence.toFixed(4)}, Threshold: ${response.threshold.toFixed(4)}, Model: ${response.model_type}`;
         console.log('✅ PIN AUTHENTICATION SUCCESSFUL');
         console.log(`👤 User: ${response.user}`);
         console.log(`🎯 Target User: ${response.target_user}`);
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)}`);
         console.log(`🚪 Threshold: ${response.threshold.toFixed(4)}`);
         console.log(`🤖 Model Type: ${response.model_type}`);
+        
+        // Store result for Results screen
+        await authLogger.logAuthResult('PIN_SUCCESS', successMessage);
       } else {
+        const failureMessage = `❌ PIN AUTHENTICATION FAILED - Confidence: ${response.confidence.toFixed(4)} (Below threshold: ${response.threshold.toFixed(4)})`;
         console.log('❌ PIN AUTHENTICATION FAILED');
         console.log(`📊 Confidence: ${response.confidence.toFixed(4)} (Below threshold: ${response.threshold.toFixed(4)})`);
+        
+        // Store result for Results screen
+        await authLogger.logAuthResult('PIN_FAILED', failureMessage);
       }
     } catch (error) {
       console.error('❌ Backend PIN Authentication Error:', error);
+      
+      // Store error result for Results screen
+      const authLogger = AuthResultsLogger.getInstance();
+      const errorMessage = `❌ PIN AUTHENTICATION FAILED - Backend Error: ${error}`;
+      await authLogger.logAuthResult('PIN_FAILED', errorMessage);
       
       // Fallback: still log the raw data format
       console.log('📝 Raw PIN Data (for manual backend testing):');

@@ -5,9 +5,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 interface ProfileScreenProps {
   onBack: () => void;
   onNavigateToDatasets: () => void;
+  onNavigateToResults: () => void;
 }
 
-export const ProfileScreen = ({ onBack, onNavigateToDatasets }: ProfileScreenProps) => {
+export const ProfileScreen = ({ onBack, onNavigateToDatasets, onNavigateToResults }: ProfileScreenProps) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
@@ -45,6 +46,7 @@ export const ProfileScreen = ({ onBack, onNavigateToDatasets }: ProfileScreenPro
       title: 'Developer Tools',
       items: [
         { icon: 'dataset', label: 'Datasets', value: 'Manage collected data', action: onNavigateToDatasets },
+        { icon: 'assessment', label: 'Authentication Results', value: 'View PIN auth logs', action: onNavigateToResults },
       ]
     },
     {

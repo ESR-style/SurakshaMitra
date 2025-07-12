@@ -9,6 +9,7 @@ import { SendMoneyScreen } from './screens/SendMoneyScreen';
 import { CardsScreen } from './screens/CardsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { DatasetScreen } from './screens/DatasetScreen';
+import { ResultsScreen } from './screens/ResultsScreen';
 import { EmulatorDetection } from './components/EmulatorDetection';
 import { SecurityVerificationService } from './services/SecurityVerificationService';
 
@@ -30,7 +31,7 @@ console.warn = (...args) => {
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<'pin' | 'twoFactor' | 'main' | 'sendMoney' | 'cards' | 'profile' | 'datasets'>('pin');
+  const [currentScreen, setCurrentScreen] = useState<'pin' | 'twoFactor' | 'main' | 'sendMoney' | 'cards' | 'profile' | 'datasets' | 'results'>('pin');
   const [showWifiPopup, setShowWifiPopup] = useState(false);
   const [mainScreenVisitCount, setMainScreenVisitCount] = useState(0); // Track visits to main screen
   const [isHandlingNavigation, setIsHandlingNavigation] = useState(false); // Prevent double navigation logging
@@ -208,6 +209,10 @@ export default function App() {
     setCurrentScreen('datasets');
   };
 
+  const handleNavigateToResults = () => {
+    setCurrentScreen('results');
+  };
+
   const handleBackToProfile = () => {
     setCurrentScreen('profile');
   };
@@ -264,7 +269,7 @@ export default function App() {
   // Hardware back button handler for Android
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (currentScreen === 'datasets' && !isHandlingNavigation) {
+      if ((currentScreen === 'datasets' || currentScreen === 'results') && !isHandlingNavigation) {
         setIsHandlingNavigation(true);
         logNavigation('hardwareBack', currentScreen, 'profile');
         setCurrentScreen('profile');
@@ -308,9 +313,11 @@ export default function App() {
       case 'cards':
         return <CardsScreen onBack={handleBackToMainIcon} />;
       case 'profile':
-        return <ProfileScreen onBack={handleBackToMainIcon} onNavigateToDatasets={handleNavigateToDatasets} />;
+        return <ProfileScreen onBack={handleBackToMainIcon} onNavigateToDatasets={handleNavigateToDatasets} onNavigateToResults={handleNavigateToResults} />;
       case 'datasets':
         return <DatasetScreen onBack={handleBackToProfile} />;
+      case 'results':
+        return <ResultsScreen onBack={handleBackToProfile} />;
       default:
         return <PinScreen onPinComplete={handlePinComplete} />;
     }
