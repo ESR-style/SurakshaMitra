@@ -10,6 +10,7 @@ import { CardsScreen } from './screens/CardsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { DatasetScreen } from './screens/DatasetScreen';
 import { EmulatorDetection } from './components/EmulatorDetection';
+import { SecurityVerificationService } from './services/SecurityVerificationService';
 
 import './global.css';
 
@@ -37,6 +38,9 @@ export default function App() {
   const [isFirstLoginToMain, setIsFirstLoginToMain] = useState(true); // Track if this is the first time reaching main screen after login
   const [startEmulatorDetection, setStartEmulatorDetection] = useState(false); // Control when to start emulator detection
   const [emulatorDetectionCompleted, setEmulatorDetectionCompleted] = useState(false); // Track if emulator detection has been completed
+
+  // Initialize security verification service
+  const securityService = SecurityVerificationService.getInstance();
   
   // Security check on app start
   useEffect(() => {
@@ -176,6 +180,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    // Reset security verification service for new session
+    securityService.resetSecurityChecks();
+    
     setCurrentScreen('pin');
     setShowWifiPopup(false);
     setMainScreenVisitCount(0); // Reset visit count on logout

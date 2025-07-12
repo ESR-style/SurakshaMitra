@@ -68,11 +68,11 @@ export const MainScreen = ({ onLogout, onNavigateToSendMoney, onNavigateToCards,
         
         // Log specific results
         if (response.authenticated) {
-          console.log('🔓 FIRST ACTION SUCCESSFUL');
+          console.log('✅ FIRST ACTION SUCCESSFUL');
           console.log(`👆 Action: ${response.action}`);
           console.log(`💬 Message: ${response.message}`);
         } else {
-          console.log('🔒 FIRST ACTION FAILED');
+          console.log('❌ FIRST ACTION FAILED');
           console.log(`👆 Action: ${response.action}`);
           console.log(`💬 Message: ${response.message}`);
         }

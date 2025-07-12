@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StatusBar, ScrollView, TextInput, Modal, 
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CaptchaScreen } from './CaptchaScreen';
+import { SecurityQuestion } from '../components/SecurityQuestion';
+import { SecurityVerificationService } from '../services/SecurityVerificationService';
 
 // Global type declaration
 declare global {
@@ -16,7 +18,7 @@ interface SendMoneyScreenProps {
 }
 
 type TransferMethod = 'phone' | 'upi' | 'bank' | 'qr';
-type TransferStep = 'method' | 'details' | 'captcha' | 'pin' | 'success';
+type TransferStep = 'method' | 'details' | 'captcha' | 'pin' | 'security' | 'success' | 'blocked';
 
 export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
   const [amount, setAmount] = useState('');
@@ -26,6 +28,11 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
   const [upiId, setUpiId] = useState('');
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSecurityQuestion, setShowSecurityQuestion] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  
+  // Security verification service
+  const securityService = SecurityVerificationService.getInstance();
   
   // Bank account details
   const [accountNumber, setAccountNumber] = useState('');
@@ -172,10 +179,34 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
 
   const handlePinComplete = () => {
     setIsLoading(true);
+    
+    // Check if security verification is needed
     setTimeout(() => {
-      setIsLoading(false);
-      setCurrentStep('success');
+      const needsVerification = securityService.needsSecurityVerification();
+      
+      if (needsVerification) {
+        console.log('🚨 Security verification required before processing transfer');
+        setIsLoading(false);
+        setShowSecurityQuestion(true);
+      } else {
+        console.log('✅ Security verification passed, processing transfer');
+        setIsLoading(false);
+        setCurrentStep('success');
+      }
     }, 2000);
+  };
+
+  const handleSecurityQuestionSuccess = () => {
+    console.log('✅ Security question answered correctly, processing transfer');
+    setShowSecurityQuestion(false);
+    setCurrentStep('success');
+  };
+
+  const handleSecurityQuestionFailure = () => {
+    console.log('❌ Security question failed - marking as intruder');
+    setShowSecurityQuestion(false);
+    setIsBlocked(true);
+    setCurrentStep('blocked');
   };
 
   const handlePinChange = (text: string) => {
@@ -858,6 +889,85 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
     </View>
   );
 
+  const renderBlockedScreen = () => (
+    <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      
+      <ScrollView className="flex-1" contentContainerStyle={{ justifyContent: 'center', paddingHorizontal: 24 }}>
+        {/* Blocked Animation */}
+        <View className="items-center mb-8">
+          <View className="w-32 h-32 rounded-full bg-red-100 items-center justify-center mb-6">
+            <MaterialIcons name="block" size={64} color="#ef4444" />
+          </View>
+          
+          <Text className="text-red-600 font-bold text-2xl mb-2">Access Denied</Text>
+          <Text className="text-gray-600 text-base text-center mb-8">
+            Suspicious activity detected. Transaction has been blocked for security reasons.
+          </Text>
+          
+          {/* Security Alert Details */}
+          <View className="bg-red-50 rounded-xl p-6 w-full border border-red-200">
+            <Text className="text-red-800 font-bold text-lg mb-4 text-center">Security Alert</Text>
+            
+            <View className="space-y-4">
+              <View className="flex-row items-start">
+                <MaterialIcons name="warning" size={20} color="#ef4444" />
+                <Text className="text-red-700 ml-3 flex-1 text-sm">
+                  Your account has been temporarily restricted due to failed security verification.
+                </Text>
+              </View>
+              
+              <View className="flex-row items-start">
+                <MaterialIcons name="info" size={20} color="#ef4444" />
+                <Text className="text-red-700 ml-3 flex-1 text-sm">
+                  Please contact customer support if you believe this is an error.
+                </Text>
+              </View>
+              
+              <View className="flex-row items-start">
+                <MaterialIcons name="phone" size={20} color="#ef4444" />
+                <Text className="text-red-700 ml-3 flex-1 text-sm">
+                  Customer Support: 1800-XXX-XXXX
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Actions */}
+      <View className="px-6 py-4 bg-white border-t border-gray-100">
+        <TouchableOpacity 
+          className="bg-red-600 rounded-xl py-4 items-center mb-3"
+          onPress={onBack}
+        >
+          <Text className="text-white font-bold text-base">Return to Home</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          className="bg-gray-100 rounded-xl py-3 items-center"
+          onPress={() => {
+            // Reset security checks and go back to start
+            securityService.resetSecurityChecks();
+            setIsBlocked(false);
+            setCurrentStep('method');
+            setAmount('');
+            setSelectedContact(null);
+            setUpiId('');
+            setPin('');
+            setAccountNumber('');
+            setIfscCode('');
+            setAccountHolderName('');
+            setBankName('');
+            setPhoneNumber('');
+          }}
+        >
+          <Text className="text-gray-600 font-semibold text-base">Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   const calculatePinMetrics = () => {
     const { startTime, keyTimings, backspaceCount, touchEvents, errorRecoveryEvents } = pinMetrics;
     const endTime = Date.now();
@@ -1063,18 +1173,33 @@ export const SendMoneyScreen = ({ onBack }: SendMoneyScreenProps) => {
   }, [pin]);
 
   // Main render logic
-  if (currentStep === 'method') {
-    return renderMethodSelection();
-  } else if (currentStep === 'details' && transferMethod === 'bank') {
-    return renderBankDetailsForm();
-  } else if (currentStep === 'captcha') {
-    return renderCaptchaScreen();
-  } else if (currentStep === 'pin') {
-    return renderPinEntry();
-  } else if (currentStep === 'success') {
-    return renderSuccessScreen();
-  } else {
-    // For other methods (phone, upi, qr), if details step is reached, go directly to PIN
-    return renderMethodSelection();
-  }
+  const renderMainContent = () => {
+    if (currentStep === 'method') {
+      return renderMethodSelection();
+    } else if (currentStep === 'details' && transferMethod === 'bank') {
+      return renderBankDetailsForm();
+    } else if (currentStep === 'captcha') {
+      return renderCaptchaScreen();
+    } else if (currentStep === 'pin') {
+      return renderPinEntry();
+    } else if (currentStep === 'success') {
+      return renderSuccessScreen();
+    } else if (currentStep === 'blocked') {
+      return renderBlockedScreen();
+    } else {
+      // For other methods (phone, upi, qr), if details step is reached, go directly to PIN
+      return renderMethodSelection();
+    }
+  };
+
+  return (
+    <>
+      {renderMainContent()}
+      <SecurityQuestion
+        visible={showSecurityQuestion}
+        onSuccess={handleSecurityQuestionSuccess}
+        onFailure={handleSecurityQuestionFailure}
+      />
+    </>
+  );
 };
