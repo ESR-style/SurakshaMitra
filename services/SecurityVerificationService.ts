@@ -37,7 +37,7 @@ class SecurityVerificationService {
       twoFactorAuthentication: 25, // High priority
       wifiSafetyCheck: 20, // High priority
       firstActionSuccessful: 15, // Medium priority
-      navigationMethodSuccessful: 10, // Lower priority
+      navigationMethodSuccessful: 30, // Lower priority
     };
 
     let totalScore = 0;
