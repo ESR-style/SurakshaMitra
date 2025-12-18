@@ -4,30 +4,46 @@ import numpy as np
 import re
 import pickle
 import ast
-import types
-import sys
 import json
 from typing import Optional, List
 import uvicorn
+import sys
+import io
 
-# 🩹 Fix the keras path before anything loads
-import keras
-import keras.models
+# Just import tensorflow - pickle will find keras modules automatically
+import tensorflow as tf
+from tensorflow import keras
 
-# Create the full module structure that pickle expects
-if not hasattr(keras, 'src'):
-    keras.src = types.SimpleNamespace()
-if not hasattr(keras.src, 'models'):
-    keras.src.models = types.SimpleNamespace()
+# Custom unpickler to handle Keras compatibility issues
+class KerasCompatUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        # Map old keras.src paths to new paths
+        if module.startswith('keras.src.'):
+            module = module.replace('keras.src.', 'keras.')
+        
+        # Handle specific mappings
+        renamed_module_map = {
+            'keras.models.sequential': 'keras.models',
+            'keras.layers.core': 'keras.layers',
+            'keras.optimizers.adam': 'keras.optimizers',
+        }
+        
+        if module in renamed_module_map:
+            module = renamed_module_map[module]
+        
+        return super().find_class(module, name)
 
-# Map the classes
-keras.src.models.sequential = keras.models.Sequential
-keras.src.models.Sequential = keras.models.Sequential
+def load_pickle_with_keras_compat(filepath):
+    """Load pickle file with Keras compatibility handling"""
+    try:
+        with open(filepath, 'rb') as f:
+            return KerasCompatUnpickler(f).load()
+    except Exception as e:
+        print(f"Error loading with custom unpickler: {e}")
+        # Fallback: try standard pickle
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
 
-# Also add to sys.modules to help with pickle loading
-sys.modules['keras.src'] = keras.src
-sys.modules['keras.src.models'] = keras.src.models
-sys.modules['keras.src.models.sequential'] = keras.models
 
 app = FastAPI(title="Keystroke Authentication API", version="1.0.0")
 
@@ -40,22 +56,42 @@ async def load_models():
     global captcha_auth_system, pin_auth_system
     
     try:
+        # Monkey patch Sequential to handle old pickle format
+        from tensorflow.keras.models import Sequential
+        
+        if not hasattr(Sequential, '_unpickle_model'):
+            # Add compatibility method for old pickle files
+            @classmethod
+            def _unpickle_model(cls, *args, **kwargs):
+                # Try to create model from config if available
+                if args and isinstance(args[0], dict):
+                    return cls.from_config(args[0])
+                return cls()
+            
+            Sequential._unpickle_model = _unpickle_model
+        
         # Load captcha authentication system
-        with open('keystroke_authentication_system.pkl', 'rb') as f:
-            captcha_auth_system = pickle.load(f)
+        print("Loading captcha authentication system...")
+        captcha_auth_system = load_pickle_with_keras_compat('keystroke_authentication_system.pkl')
         print("✅ Captcha authentication system loaded successfully")
         
         # Load PIN authentication system
-        with open('pin_authentication.pkl', 'rb') as f:
-            pin_auth_system = pickle.load(f)
+        print("Loading PIN authentication system...")
+        pin_auth_system = load_pickle_with_keras_compat('pin_authentication.pkl')
         print("✅ PIN authentication system loaded successfully")
         
     except FileNotFoundError as e:
         print(f"❌ Error loading authentication systems: {e}")
         raise e
+    except Exception as e:
+        print(f"❌ Error during model loading: {e}")
+        print("The pickle files may need to be regenerated with the current Keras version")
+        raise e
 
 # Pydantic models for request/response
 class AuthenticationResponse(BaseModel):
+    model_config = {'protected_namespaces': ()}
+    
     authenticated: bool
     confidence: float
     threshold: float
